@@ -5,30 +5,53 @@ function App() {
 	const [dirPath, setDirPath] = useState("");
 	const [numIterations, setNumIterations] = useState("");
 	const [startFrame, setStartFrame] = useState("");
-	const [mode, setMode] = useState("decimal"); // "decimal" o "hexagesimal"
+	const [mode, setMode] = useState("Nexo (Eventinator)");
 	const [yamlContent, setYamlContent] = useState("");
 
 	const handleGenerate = () => {
-		const iterations = parseInt(numIterations, 10);
-		const start = parseInt(startFrame, 10);
-		if (isNaN(iterations) || isNaN(start)) return;
+		const iterations = Number.parseInt(numIterations, 10);
+		const start = Number.parseInt(startFrame, 10);
+		if (Number.isNaN(iterations) || Number.isNaN(start)) return;
 
 		let content = "";
+		// Se define el límite según el modo:
+		// "Nexo (AnimationsCore)" e "ItemsAdder (AnimationsCore)" usan hexadecimal (0-4095)
+		// mientras que "Nexo (Eventinator)" e "ItemsAdder (Eventinator)" usan decimal (0-999)
+		const frameLimit =
+			mode === "Nexo (AnimationsCore)" ||
+			mode === "ItemsAdder (AnimationsCore)"
+				? 4095
+				: 999;
+
 		for (let i = 0; i < iterations; i++) {
 			const currentFrame = start + i;
-			if (currentFrame > 999) break;
+			if (currentFrame > frameLimit) break;
 
-			// Dependiendo del modo, se formatea el número de frame
+			// Se calcula el valor del frame dependiendo del modo numérico.
 			const frameValue =
-				mode === "hexagesimal"
+				mode === "Nexo (AnimationsCore)" ||
+				mode === "ItemsAdder (AnimationsCore)"
 					? currentFrame.toString(16).toUpperCase().padStart(3, "0")
 					: currentFrame.toString().padStart(3, "0");
 
-			content += `${fileName}_${i + 1}:\n`;
-			content += `  texture: "${dirPath}/${fileName}_${i + 1}"\n`;
-			content += `  ascent: 30\n`;
-			content += `  height: 64\n`;
-			content += `  char: "\\uE${frameValue}"\n`;
+			// Generación del YAML en función del modo de iteración seleccionado.
+			if (
+				mode === "ItemsAdder (Eventinator)" ||
+				mode === "ItemsAdder (AnimationsCore)"
+			) {
+				content += `${fileName}_${i + 1}:\n`;
+				content += `  show_in_gui: false\n`;
+				content += `  path: "${dirPath}/${fileName}_${i + 1}"\n`;
+				content += `  symbol: "\\uE${frameValue}"\n`;
+				content += `  scale_ratio: 30\n`;
+				content += `  y_position: 64\n`;
+			} else {
+				content += `${fileName}_${i + 1}:\n`;
+				content += `  texture: "${dirPath}/${fileName}_${i + 1}"\n`;
+				content += `  ascent: 30\n`;
+				content += `  height: 64\n`;
+				content += `  char: "\\uE${frameValue}"\n`;
+			}
 		}
 		setYamlContent(content);
 	};
@@ -55,7 +78,7 @@ function App() {
 		setNumIterations("");
 		setStartFrame("");
 		setYamlContent("");
-		setMode("decimal");
+		setMode("Nexo (Eventinator)");
 	};
 
 	return (
@@ -107,7 +130,12 @@ function App() {
 					</div>
 					<div>
 						<label className='block mb-1'>
-							Número inicial (0-999):
+							Número inicial (0-
+							{mode === "Nexo (AnimationsCore)" ||
+							mode === "ItemsAdder (AnimationsCore)"
+								? "4095"
+								: "999"}
+							):
 						</label>
 						<input
 							type='number'
@@ -125,9 +153,17 @@ function App() {
 						value={mode}
 						onChange={(e) => setMode(e.target.value)}
 						className='w-full p-2 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500'>
-						<option value='decimal'>Decimal (Eventinator)</option>
-						<option value='hexagesimal'>
-							Hexagesimal (AnimationsCore)
+						<option value='Nexo (Eventinator)'>
+							Nexo (Eventinator)
+						</option>
+						<option value='Nexo (AnimationsCore)'>
+							Nexo (AnimationsCore)
+						</option>
+						<option value='ItemsAdder (Eventinator)'>
+							ItemsAdder (Eventinator)
+						</option>
+						<option value='ItemsAdder (AnimationsCore)'>
+							ItemsAdder (AnimationsCore)
 						</option>
 					</select>
 				</div>
@@ -162,7 +198,7 @@ function App() {
 					<textarea
 						value={yamlContent}
 						readOnly
-						onClick={handleCopy}
+						onKeyPress={handleCopy}
 						className='w-full h-64 p-2 rounded bg-gray-700 border border-gray-600 resize-none focus:outline-none cursor-pointer'
 					/>
 				</div>
